@@ -62,74 +62,64 @@ nao <-
   as_tsibble(index = x) 
 
 fft <- torch_fft_fft(nao$nao)
-below_nyquist <- fft[1:(length(fft)/2)]
 
-### tbd correct!!!! ###
+num_samples <- nrow(nao)
+nyquist_cutoff <- ceiling(num_samples/2) 
+bins_below_nyquist <- 1:nyquist_cutoff
 
-years <- length(below_nyquist)/12
-x <- seq(0, years, length.out = length(below_nyquist))/years
+sampling_rate <- 12 # per year
+frequencies_per_bin <- sampling_rate / num_samples
+frequencies <- frequencies_per_bin * bins_below_nyquist
 
-df <- data.frame(f = x, y = as.numeric(below_nyquist$abs()))
+df <- data.frame(f = frequencies, y = as.numeric(fft[1:nyquist_cutoff]$abs()))
 df %>% ggplot(aes(f, y)) + geom_line() +
-  xlab("frequency (years)")
+  xlab("frequency (per year)")
+
+torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
+# dominant frequencies: 1/year, 2/year, 0.5/year, 0.08/year ...
+# [[1]]
+# torch_tensor
+# 356.4380
+# 318.9236
+# 281.5578
+# 230.8849
+# 225.3260
+# 212.9847
+# 207.1933
+# 205.6112
+# 205.2927
+# [ CPUFloatType{9} ]
+# 
+# [[2]]
+# torch_tensor
+# 200
+# 399
+# 398
+# 269
+# 356
+# 424
+# 89
+# 400
+# 16
+# [ CPULongType{9} ]
+
+nao %>%
+  model(STL(nao ~ season(period = 144) + season(period = 24) + season(period = 12) + season(period = 6))) %>%
+  components() %>%
+  autoplot()
 
 nao %>%
   model(STL(nao ~ season(period = 12 * 7))) %>%
   components() %>%
   autoplot()
-nao %>%
-  filter(x >= yearmonth("1950-01")) %>%
-  model(STL(nao ~ season(period = 12 * 7))) %>%
-  components() %>%
-  autoplot()
 
 
-########################   tbd adjust   ########################
-nao_valid %>% features(y, feat_stl)
-feat_stl(nao_valid$y, .period = 12, s.window = 7) %>% round(2)
+nao %>% features(nao, feat_stl) %>% glimpse()
+feat_stl(nao$nao, .period = 12) %>% round(2)
+feat_stl(nao$nao, .period = 6) %>% round(2)
+feat_stl(nao$nao, .period = 24) %>% round(2)
 
-# ACF
-nao_valid %>% features(y, feat_acf)
-nao_valid %>% ACF(y) %>% autoplot()
-
-# other features
-# rate at which autocorrelations decrease as the lag between pairs of values increases
-# > 0.5: long-term positive autocorrelations
-# < 0.5: mean-reverting
-# 0.5: random walk
-nao_valid %>% features(y, coef_hurst) 
-nao_valid %>% features(y, feat_spectral) #[0, 1]
-nao_valid %>% features(y, feat_acf)
-nao_valid %>% features(y, feat_acf)
-nao_valid %>% features(y, feat_acf)
-
-
-# fit
-
-fit <- nao_train %>% model(
-  # Error ={A,M}, Trend ={N,A,Ad} and Seasonal ={N,A,M}.
-  ets = ETS(y ~ season(method = "A", gamma = 0.5))
-)
-fit
-
-fit <- nao_train %>% model(
-  ets = ETS(y ~ season(method = "A", gamma = 0.1)), # 0: seasonal pattern will not change
-  ets2 = ETS(y ~ season(method = "A", gamma = 0.5)),
-  ets3 = ETS(y ~ season(method = "A", gamma = 0.9)), # 1: seasonality will have no memory of past periods
-  arima = ARIMA(y),
-  snaive = SNAIVE(y)
-) 
-
-fc <- fit %>%
-  forecast(h = "2 years") 
-
-fc %>% 
-  autoplot(filter(nao_valid, x < yearmonth("1992-01")), level = NULL)
-
-accuracy(fc, filter(nao_valid, x < yearmonth("1992-01")))
-
-fit %>% select(ets3) %>% report()
-fit %>% report()
+nao %>% ACF(nao) %>% autoplot()
 
 
 
@@ -137,12 +127,27 @@ fit %>% report()
 
 ########################   ENSO   ########################
 
-enso <- read_table2("data/ONI_NINO34_1854-2020.txt", skip = 9) %>%
+enso <- read_table("data/ONI_NINO34_1854-2022.txt", skip = 9) %>%
   mutate(x = yearmonth(as.Date(paste0(YEAR, "-", `MON/MMM`, "-01")))) %>%
   select(x, enso = NINO34_MEAN) %>%
-  filter(x >= yearmonth("1854-01"), x <= yearmonth("2020-07")) %>%
+  filter(x >= yearmonth("1854-01"), x <= yearmonth("2022-11")) %>%
   as_tsibble(index = x) 
 
+fft <- torch_fft_fft(enso$enso)
 
+num_samples <- nrow(enso)
+nyquist_cutoff <- num_samples / 2 + 1
+bins_below_nyquist <- 1:nyquist_cutoff
+
+sampling_rate <- 12 # per year
+frequencies_per_bin <- sampling_rate / num_samples
+frequencies <- frequencies_per_bin * bins_below_nyquist
+
+df <- data.frame(f = frequencies, y = as.numeric(fft[1:nyquist_cutoff]$abs()))
+df %>% ggplot(aes(f, y)) + geom_line() +
+  xlab("frequency (per year)")
+
+
+########################   AO    ########################
 
 
