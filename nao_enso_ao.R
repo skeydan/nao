@@ -61,17 +61,17 @@ nao <-
   fill(nao) %>%
   as_tsibble(index = x) 
 
-fft <- torch_fft_fft(nao$nao)
+fft <- torch_fft_fft(as.numeric(scale(nao$nao)))
 
 num_samples <- nrow(nao)
-nyquist_cutoff <- ceiling(num_samples/2) 
-bins_below_nyquist <- 1:nyquist_cutoff
+nyquist_cutoff <- floor(num_samples/2) 
+bins_below_nyquist <- 0:nyquist_cutoff
 
 sampling_rate <- 12 # per year
 frequencies_per_bin <- sampling_rate / num_samples
 frequencies <- frequencies_per_bin * bins_below_nyquist
 
-df <- data.frame(f = frequencies, y = as.numeric(fft[1:nyquist_cutoff]$abs()))
+df <- data.frame(f = frequencies, y = as.numeric(fft[1:(nyquist_cutoff + 1)]$abs()))
 df %>% ggplot(aes(f, y)) + geom_line() +
   xlab("frequency (per year)")
 
@@ -133,20 +133,21 @@ enso <- read_table("data/ONI_NINO34_1854-2022.txt", skip = 9) %>%
   filter(x >= yearmonth("1854-01"), x <= yearmonth("2022-11")) %>%
   as_tsibble(index = x) 
 
-fft <- torch_fft_fft(enso$enso)
+fft <- torch_fft_fft(as.numeric(scale(enso$enso)))
 
 num_samples <- nrow(enso)
-nyquist_cutoff <- num_samples / 2 + 1
-bins_below_nyquist <- 1:nyquist_cutoff
+nyquist_cutoff <- floor(num_samples / 2)
+bins_below_nyquist <- 0:nyquist_cutoff
 
 sampling_rate <- 12 # per year
 frequencies_per_bin <- sampling_rate / num_samples
 frequencies <- frequencies_per_bin * bins_below_nyquist
 
-df <- data.frame(f = frequencies, y = as.numeric(fft[1:nyquist_cutoff]$abs()))
+df <- data.frame(f = frequencies, y = as.numeric(fft[1:(nyquist_cutoff + 1)]$abs()))
 df %>% ggplot(aes(f, y)) + geom_line() +
   xlab("frequency (per year)")
 
+torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
 
 ########################   AO    ########################
 
