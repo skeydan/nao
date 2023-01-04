@@ -75,8 +75,7 @@ df <- data.frame(f = frequencies, y = as.numeric(fft[1:(nyquist_cutoff + 1)]$abs
 df %>% ggplot(aes(f, y)) + geom_line() +
   xlab("frequency (per year)")
 
-torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
-# dominant frequencies: 1/year, 2/year, 0.5/year, 0.08/year ...
+strongest <- torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
 # [[1]]
 # torch_tensor
 # 356.4380
@@ -103,14 +102,25 @@ torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
 # 16
 # [ CPULongType{9} ]
 
+important_freqs <- frequencies[as.numeric(strongest[[2]])]
+num_observations_in_season <- 12/important_freqs  
+# [1]  11.984925   5.992462   6.007557   8.899254   6.718310   5.638298
+# [7]  27.102273   5.977444 159.000000
+
 nao %>%
-  model(STL(nao ~ season(period = 144) + season(period = 24) + season(period = 12) + season(period = 6))) %>%
+  model(STL(nao ~season(period = 12) + season(period = 6) + season(period = 27) + season(period = 160))) %>%
   components() %>%
   autoplot()
 
 nao %>%
-  model(STL(nao ~ season(period = 12 * 7))) %>%
-  components() %>%
+  autoplot()
+
+nao %>%
+  filter(x >= yearmonth("1950-01")) %>%
+  autoplot()
+
+nao %>%
+  filter(x >= yearmonth("1990-01")) %>%
   autoplot()
 
 
@@ -147,7 +157,35 @@ df <- data.frame(f = frequencies, y = as.numeric(fft[1:(nyquist_cutoff + 1)]$abs
 df %>% ggplot(aes(f, y)) + geom_line() +
   xlab("frequency (per year)")
 
-torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
+strongest <- torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
+
+important_freqs <- frequencies[as.numeric(strongest[[2]])]
+num_observations_in_season <- 12/important_freqs  
+
+#tbd
+nao %>%
+  model(STL(nao ~season(period = 12) + season(period = 6) + season(period = 27) + season(period = 160))) %>%
+  components() %>%
+  autoplot()
+
+nao %>%
+  autoplot()
+
+nao %>%
+  filter(x >= yearmonth("1950-01")) %>%
+  autoplot()
+
+nao %>%
+  filter(x >= yearmonth("1990-01")) %>%
+  autoplot()
+
+
+nao %>% features(nao, feat_stl) %>% glimpse()
+feat_stl(nao$nao, .period = 12) %>% round(2)
+feat_stl(nao$nao, .period = 6) %>% round(2)
+feat_stl(nao$nao, .period = 24) %>% round(2)
+
+nao %>% ACF(nao) %>% autoplot()
 
 ########################   AO    ########################
 
