@@ -104,8 +104,7 @@ strongest <- torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
 
 important_freqs <- frequencies[as.numeric(strongest[[2]])]
 num_observations_in_season <- 12/important_freqs  
-# [1]  11.984925   5.992462   6.007557   8.899254   6.718310   5.638298
-# [7]  27.102273   5.977444 159.000000
+# [1]  11.984925   5.992462   6.007557   8.899254   6.718310   5.638298 27.102273   5.977444 159.000000
 
 nao %>%
   model(STL(nao ~season(period = 12) + season(period = 6) + season(period = 27) + season(period = 160))) %>%
@@ -127,7 +126,8 @@ nao %>%
 nao %>% features(nao, feat_stl) %>% glimpse()
 feat_stl(nao$nao, .period = 12) %>% round(2)
 feat_stl(nao$nao, .period = 6) %>% round(2)
-feat_stl(nao$nao, .period = 24) %>% round(2)
+feat_stl(nao$nao, .period = 27) %>% round(2)
+feat_stl(nao$nao, .period = 160) %>% round(2)
 
 nao %>% ACF(nao) %>% autoplot()
 
@@ -158,34 +158,61 @@ df %>% ggplot(aes(f, y)) + geom_line() +
   xlab("frequency (per year)")
 
 strongest <- torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
+# [[1]]
+# torch_tensor
+# 622.1033
+# 243.4483
+# 227.2007
+# 219.2842
+# 218.4071
+# 217.9854
+# 209.8352
+# 206.4957
+# 197.5305
+# [ CPUFloatType{9} ]
+# 
+# [[2]]
+# torch_tensor
+# 170
+# 2
+# 339
+# 3
+# 14
+# 31
+# 49
+# 46
+# 41
+# [ CPULongType{9} ]
 
 important_freqs <- frequencies[as.numeric(strongest[[2]])]
 num_observations_in_season <- 12/important_freqs  
+# [1]   11.994083 2027.000000    5.997041 1013.500000  155.923077 67.566667   42.229167   45.044444   50.675000
 
-#tbd
-nao %>%
-  model(STL(nao ~season(period = 12) + season(period = 6) + season(period = 27) + season(period = 160))) %>%
+enso %>%
+  model(STL(enso ~season(period = 12) + season(period = 1014) + season(period = 6) + season(period = 156) + season(period = 50))) %>%
   components() %>%
   autoplot()
 
-nao %>%
+enso %>%
   autoplot()
 
-nao %>%
+enso %>%
   filter(x >= yearmonth("1950-01")) %>%
   autoplot()
 
-nao %>%
+enso %>%
   filter(x >= yearmonth("1990-01")) %>%
   autoplot()
 
 
-nao %>% features(nao, feat_stl) %>% glimpse()
-feat_stl(nao$nao, .period = 12) %>% round(2)
-feat_stl(nao$nao, .period = 6) %>% round(2)
-feat_stl(nao$nao, .period = 24) %>% round(2)
+enso %>% features(enso, feat_stl) %>% glimpse()
+feat_stl(enso$enso, .period = 12) %>% round(2)
+feat_stl(enso$enso, .period = 1014) %>% round(2)
+feat_stl(enso$enso, .period = 6) %>% round(2)
+feat_stl(enso$enso, .period = 156) %>% round(2)
+feat_stl(enso$enso, .period = 50) %>% round(2)
 
-nao %>% ACF(nao) %>% autoplot()
+enso %>% ACF(enso) %>% autoplot()
 
 ########################   AO    ########################
 
