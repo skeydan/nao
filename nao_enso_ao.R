@@ -67,7 +67,7 @@ nao <-
 fft <- torch_fft_fft(as.numeric(scale(nao$nao)))
 
 num_samples <- nrow(nao)
-nyquist_cutoff <- floor(num_samples/2) 
+nyquist_cutoff <- ceiling(num_samples / 2)
 bins_below_nyquist <- 0:nyquist_cutoff
 
 sampling_rate <- 12 # per year
@@ -75,8 +75,11 @@ frequencies_per_bin <- sampling_rate / num_samples
 frequencies <- frequencies_per_bin * bins_below_nyquist
 
 df <- data.frame(f = frequencies, y = as.numeric(fft[1:(nyquist_cutoff + 1)]$abs()))
-df %>% ggplot(aes(f, y)) + geom_line() +
-  xlab("frequency (per year)")
+df %>% ggplot(aes(f, y)) +
+  geom_line() +
+  xlab("frequency (per year)") +
+  ylab("magnitude") +
+  ggtitle("tbd")
 
 strongest <- torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
 # [[1]]
@@ -131,6 +134,7 @@ nao %>% ACF(nao) %>% autoplot()
 
 ########################   ENSO   ########################
 
+
 enso <- read_table("data/ONI_NINO34_1854-2022.txt", skip = 9) %>%
   mutate(x = yearmonth(as.Date(paste0(YEAR, "-", `MON/MMM`, "-01")))) %>%
   select(x, enso = NINO34_MEAN) %>%
@@ -140,7 +144,7 @@ enso <- read_table("data/ONI_NINO34_1854-2022.txt", skip = 9) %>%
 fft <- torch_fft_fft(as.numeric(scale(enso$enso)))
 
 num_samples <- nrow(enso)
-nyquist_cutoff <- floor(num_samples / 2)
+nyquist_cutoff <- ceiling(num_samples / 2)
 bins_below_nyquist <- 0:nyquist_cutoff
 
 sampling_rate <- 12 # per year
@@ -148,8 +152,11 @@ frequencies_per_bin <- sampling_rate / num_samples
 frequencies <- frequencies_per_bin * bins_below_nyquist
 
 df <- data.frame(f = frequencies, y = as.numeric(fft[1:(nyquist_cutoff + 1)]$abs()))
-df %>% ggplot(aes(f, y)) + geom_line() +
-  xlab("frequency (per year)")
+df %>% ggplot(aes(f, y)) +
+  geom_line() +
+  xlab("frequency (per year)") +
+  ylab("magnitude") +
+  ggtitle("Spectrum of Niño 3.4 data")
 
 strongest <- torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
 strongest
@@ -232,7 +239,7 @@ ao <-
 fft <- torch_fft_fft(as.numeric(scale(ao$ao)))
 
 num_samples <- nrow(ao)
-nyquist_cutoff <- floor(num_samples/2) 
+nyquist_cutoff <- ceiling(num_samples / 2)
 bins_below_nyquist <- 0:nyquist_cutoff
 
 sampling_rate <- 12 # per year
@@ -240,8 +247,11 @@ frequencies_per_bin <- sampling_rate / num_samples
 frequencies <- frequencies_per_bin * bins_below_nyquist
 
 df <- data.frame(f = frequencies, y = as.numeric(fft[1:(nyquist_cutoff + 1)]$abs()))
-df %>% ggplot(aes(f, y)) + geom_line() +
-  xlab("frequency (per year)")
+df %>% ggplot(aes(f, y)) +
+  geom_line() +
+  xlab("frequency (per year)") +
+  ylab("magnitude") +
+  ggtitle("Spectrum of Niño 3.4 data")
 
 strongest <- torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
 strongest
