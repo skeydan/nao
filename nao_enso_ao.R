@@ -2,20 +2,11 @@
 # NAO
 # https://crudata.uea.ac.uk/cru/data//nao/index.htm
 # 
-# The NAO is traditionally defined as the normalized pressure difference between a station on the Azores
-# and one on Iceland. [...] Here we give data for SW Iceland (Reykjavik), Gibraltar and Ponta Delgada (Azores). 
-# cite: Jones, P.D., Jónsson, T. and Wheeler, D., 1997: Extension to the North Atlantic Oscillation using early instrumental pressure observations from Gibraltar and South-West Iceland. Int. J. Climatol. 17, 1433-1450. doi: 10.1002/(SICI)1097-0088(19971115)17:13<1433::AID-JOC203>3.0.CO;2-P
-#
-#
 # ENSO
 # https://bmcnoldy.rsmas.miami.edu/tropics/oni/
 #
-# ONI ≥ 0.5°C indicate El Niño, values ≤ -0.5°C indicate La Niña, and values in between indicate a Neutral phase.
-#
-#
 # AO
 # https://www.cpc.ncep.noaa.gov/products/precip/CWlink/daily_ao_index/ao.shtml
-# https://www.cpc.ncep.noaa.gov/products/precip/CWlink/daily_ao_index/history/method.shtml
 
 
 ########################   Links   ########################
@@ -27,10 +18,15 @@
 # Pacific is active in our experiments, with forecasts initialized in El Niño/La Niña conditions in
 # November tending to be followed by negative/positive NAO conditions in winter. 
 
+# The NAO is traditionally defined as the normalized pressure difference between a station on the Azores
+# and one on Iceland. [...] Here we give data for SW Iceland (Reykjavik), Gibraltar and Ponta Delgada (Azores). 
+# cite: Jones, P.D., Jónsson, T. and Wheeler, D., 1997: Extension to the North Atlantic Oscillation using early instrumental pressure observations from Gibraltar and South-West Iceland. Int. J. Climatol. 17, 1433-1450. doi: 10.1002/(SICI)1097-0088(19971115)17:13<1433::AID-JOC203>3.0.CO;2-P
+#
+# https://www.cpc.ncep.noaa.gov/products/precip/CWlink/daily_ao_index/history/method.shtml
+
 
 library(torch)
 library(tidyverse)
-library(fable)
 library(tsibble)
 library(feasts)
 
@@ -158,19 +154,13 @@ df %>% ggplot(aes(f, y)) +
   ylab("magnitude") +
   ggtitle("Spectrum of Niño 3.4 data")
 
-strongest <- torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 9)
+strongest <- torch_topk(fft[1:(nyquist_cutoff/2)]$abs(), 3)
 strongest
 # [[1]]
 # torch_tensor
 # 233.9855
 # 172.2784
 # 142.3784
-# 141.2106
-# 137.7462
-# 129.7767
-# 114.6447
-# 106.7602
-# 105.6942
 # [ CPUFloatType{9} ]
 # 
 # [[2]]
@@ -178,28 +168,16 @@ strongest
 # 74
 # 21
 # 7
-# 16
-# 14
-# 26
-# 31
-# 50
-# 15
 # [ CPULongType{9} ]
 important_freqs <- frequencies[as.numeric(strongest[[2]])]
 important_freqs
-# [1] 1.00343643 0.27491409 0.08247423 0.20618557 0.17869416 0.34364261 0.41237113 0.67353952 0.19243986
+# [1] 1.00343643 0.27491409 0.08247423 
 num_observations_in_season <- 12/important_freqs  
 num_observations_in_season
-# [1] 11.95890  43.65000 145.50000  58.20000  67.15385  34.92000  29.10000 17.81633  62.35714
+# [1] 11.95890  43.65000 145.50000  
 
 enso %>%
-  model(STL(enso ~ season(period = 12) + season(period = 44) + season(period = 67) +  season(period = 145))) %>%
-  components() %>%
-  autoplot()
-
-# not that good
-enso %>%
-  model(STL(enso ~ season(period = 12))) %>%
+  model(STL(enso ~ season(period = 12) + season(period = 44) + season(period = 145))) %>%
   components() %>%
   autoplot()
 
@@ -353,33 +331,28 @@ ggplot(df) +
 
 ### enso ###
 
-enso_idx <- enso$enso %>% as.numeric() %>% torch_tensor()
 
+enso_idx <- enso$enso %>% as.numeric() %>% torch_tensor()
+dt <- 1/12
 wtf <- wavelet_transform(length(enso_idx), dt = dt)
 power_spectrum <- wtf$power(enso_idx)
 
-# same
-# times <- lubridate::year(enso$x) + lubridate::month(enso$x)/12
-coi <- wtf$coi(times[1], times[length(enso_idx)])
+times <- lubridate::year(enso$x) + lubridate::month(enso$x)/12
+scales <- as.numeric(wtf$scales)
 
-# same
-# scales <- as.numeric(wtf$scales)
 df <- as_tibble(as.matrix(power_spectrum$t()), .name_repair = "universal") %>%
   mutate(time = times) %>%
   pivot_longer(!time, names_to = "scale", values_to = "power") %>%
   mutate(scale = scales[scale %>% 
                           str_remove("[\\.]{3}") %>%
                           as.numeric()])
-
+coi <- wtf$coi(times[1], times[length(enso_idx)])
 coi_df <- data.frame(x = as.numeric(coi[[1]]), y = as.numeric(coi[[2]]))
 
-# same too
 labeled_scales <- c(0.25, 0.5, 1, 2, 4, 8, 16, 32, 64)
 labeled_frequencies <- round(as.numeric(wtf$fourier_period(labeled_scales)), 1)
 
-# same too
 ggplot(df) +
-  #scale_y_continuous(trans = c("log10", "reverse")) + 
   scale_y_continuous(
     trans = scales::compose_trans(scales::log2_trans(), scales::reverse_trans()),
     breaks = c(0.25, 0.5, 1, 2, 4, 8, 16, 32, 64),
@@ -394,8 +367,9 @@ ggplot(df) +
   xlab("year") +
   geom_contour_filled(aes(time, scale, z = power), show.legend = FALSE) +
   scale_fill_viridis_d(option = "turbo") +
-  geom_ribbon(data = coi_df, aes(x = x, ymin = y, ymax = max(scales)), fill = "black", alpha = 0.3) +
+  geom_ribbon(data = coi_df, aes(x = x, ymin = y, ymax = max(scales)), fill = "black", alpha = 0.6) +
   theme(legend.position = "none")
+
 
 
 ### ao ###
