@@ -11,19 +11,8 @@
 
 ########################   Links   ########################
 # https://psl.noaa.gov/data/correlation/
-# https://ore.exeter.ac.uk/repository/handle/10871/34601 (Skillful long-range prediction of European and North American winters)
-# Previous studies have shown that the El Niño–Southern Oscillation can drive interannual variations
-# in the NAO [Brönnimann et al., 2007] and hence Atlantic and European winter climate via the
-# stratosphere [Bell et al., 2009].Figures 2b and 2c confirm that this teleconnection to the tropical
-# Pacific is active in our experiments, with forecasts initialized in El Niño/La Niña conditions in
-# November tending to be followed by negative/positive NAO conditions in winter. 
-
-# The NAO is traditionally defined as the normalized pressure difference between a station on the Azores
-# and one on Iceland. [...] Here we give data for SW Iceland (Reykjavik), Gibraltar and Ponta Delgada (Azores). 
-# cite: Jones, P.D., Jónsson, T. and Wheeler, D., 1997: Extension to the North Atlantic Oscillation using early instrumental pressure observations from Gibraltar and South-West Iceland. Int. J. Climatol. 17, 1433-1450. doi: 10.1002/(SICI)1097-0088(19971115)17:13<1433::AID-JOC203>3.0.CO;2-P
+# https://ore.exeter.ac.uk/repository/handle/10871/34601 
 #
-# https://www.cpc.ncep.noaa.gov/products/precip/CWlink/daily_ao_index/history/method.shtml
-
 
 library(torch)
 library(tidyverse)
